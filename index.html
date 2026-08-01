@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>麻雀成績表</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card-bg: #ffffff;
+    --text: #1f2430;
+    --sub-text: #6b7280;
+    --border: #e2e4e9;
+    --accent: #2f6fed;
+    --accent-soft: #eaf1fe;
+    --plus-color: #d93025;
+    --minus-color: #1a73e8;
+    --fee-color: #188038;
+    --header-bg: #232838;
+    --header-text: #f4f5f7;
+    --total-bg: #fff7e0;
+    --rank1: #ffd54f;
+    --rank2: #cfd8dc;
+    --rank3: #ffab91;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d;
+      --card-bg: #1e2129;
+      --text: #e7e9ee;
+      --sub-text: #9aa0ab;
+      --border: #333846;
+      --accent: #5b8dfb;
+      --accent-soft: #253252;
+      --plus-color: #ff6b6b;
+      --minus-color: #6fa8ff;
+      --fee-color: #4ade80;
+      --header-bg: #10131a;
+      --header-text: #e7e9ee;
+      --total-bg: #33302066;
+      --rank1: #8a6d00;
+      --rank2: #4a4f57;
+      --rank3: #6b3a26;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 80px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.5rem;
+    margin: 0 0 20px;
+  }
+  .wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    overflow-x: auto;
+  }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: filter 0.15s;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:active { filter: brightness(0.95); }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .btn-danger {
+    background: transparent;
+    color: var(--sub-text);
+    padding: 4px 8px;
+    font-size: 0.85rem;
+  }
+  .btn-danger:hover { color: var(--plus-color); }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  thead th {
+    background: var(--header-bg);
+    color: var(--header-text);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+  }
+  thead th.name-cell {
+    padding: 6px 8px;
+  }
+  .player-name-input {
+    width: 100%;
+    min-width: 70px;
+    text-align: center;
+    background: transparent;
+    color: inherit;
+    border: none;
+    border-bottom: 1px dashed rgba(255,255,255,0.4);
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 3px 2px;
+  }
+  .player-name-input:focus {
+    outline: none;
+    border-bottom: 1px solid #fff;
+  }
+  .remove-player-btn {
+    display: block;
+    margin: 4px auto 0;
+    background: transparent;
+    color: rgba(255,255,255,0.65);
+    font-size: 0.75rem;
+    padding: 0 2px;
+  }
+  .remove-player-btn:hover { color: var(--plus-color); }
+  td.round-cell {
+    font-weight: 600;
+    color: var(--sub-text);
+    background: var(--card-bg);
+  }
+  .round-cell-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .score-input {
+    width: 80px;
+    text-align: center;
+    padding: 6px 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+  }
+  .score-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .score-plus { color: var(--plus-color); }
+  .score-minus { color: var(--minus-color); }
+  .score-fee { color: var(--fee-color); }
+  tfoot td {
+    font-weight: 700;
+  }
+  tfoot tr.total-row td {
+    background: var(--total-bg);
+    font-size: 1.02rem;
+  }
+  tfoot tr.rank-row td {
+    background: var(--card-bg);
+    font-size: 0.85rem;
+    color: var(--sub-text);
+  }
+  tfoot tr.settlement-row td {
+    background: var(--accent-soft);
+    font-size: 0.95rem;
+  }
+  tfoot tr.settlement-final-row td {
+    background: var(--total-bg);
+    font-size: 1.05rem;
+  }
+  .settlement-sub {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--sub-text);
+    margin-top: 2px;
+  }
+  .settlement-formula {
+    margin-top: 6px;
+    font-size: 0.76rem;
+    color: var(--sub-text);
+    text-align: right;
+  }
+  .rank-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 700;
+    color: #1f2430;
+  }
+  .rank-1 { background: var(--rank1); }
+  .rank-2 { background: var(--rank2); }
+  .rank-3 { background: var(--rank3); }
+  .rank-other { background: transparent; color: var(--sub-text); }
+  .balance-note {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--sub-text);
+    text-align: right;
+  }
+  .balance-note.warn { color: var(--plus-color); }
+  .share-panel {
+    margin-bottom: 14px;
+    padding: 12px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+  }
+  .share-status {
+    font-size: 0.85rem;
+    color: var(--sub-text);
+    margin-bottom: 8px;
+  }
+  .share-status strong {
+    color: var(--text);
+    font-family: monospace;
+    font-size: 0.95rem;
+  }
+  .share-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .share-input {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 0.88rem;
+    min-width: 150px;
+  }
+  .share-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .share-note {
+    font-size: 0.74rem;
+    color: var(--sub-text);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  footer.hint {
+    max-width: 1000px;
+    margin: 14px auto 0;
+    font-size: 0.78rem;
+    color: var(--sub-text);
+    text-align: center;
+  }
+  @media (max-width: 480px) {
+    body { padding: 12px 8px 60px; }
+    h1 { font-size: 1.2rem; margin-bottom: 12px; }
+    .card { padding: 10px; }
+    th, td { padding: 5px 3px; }
+    .score-input { width: 54px; padding: 5px 2px; font-size: 0.85rem; }
+    .player-name-input { min-width: 48px; font-size: 0.82rem; }
+    .remove-player-btn { font-size: 0.68rem; }
+    .round-cell-inner { gap: 3px; font-size: 0.82rem; }
+    td.round-cell { font-size: 0.82rem; }
+    .settlement-sub { font-size: 0.64rem; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🀄 麻雀成績表</h1>
+    <div class="card">
+      <div class="toolbar">
+        <button class="btn-primary" id="addPlayerBtn">＋ プレイヤー追加</button>
+        <button class="btn-secondary" id="addRoundBtn">＋ 半荘追加</button>
+        <button class="btn-secondary" id="settlementBtn">精算</button>
+        <button class="btn-secondary" id="rateModeBtn">料率: テン5</button>
+        <button class="btn-secondary" id="shareToggleBtn">共有</button>
+        <button class="btn-danger" id="resetBtn" style="margin-left:auto;">全データをクリア</button>
+      </div>
+      <div class="share-panel" id="sharePanel" style="display:none;">
+        <div class="share-status" id="shareStatus">共有していません（このブラウザだけのデータです）</div>
+        <div class="share-actions" id="shareActionsJoin">
+          <button class="btn-primary" id="createRoomBtn">新しい共有を開始</button>
+          <input type="text" class="share-input" id="joinRoomInput" placeholder="ルームIDを入力して参加">
+          <button class="btn-secondary" id="joinRoomBtn">参加</button>
+        </div>
+        <div class="share-actions" id="shareActionsLeave" style="display:none;">
+          <button class="btn-secondary" id="copyRoomBtn">ルームIDをコピー</button>
+          <button class="btn-danger" id="leaveRoomBtn">共有を解除</button>
+        </div>
+        <div class="share-note">同じルームIDを入力した端末同士で、数秒おきにスコアが自動同期されます。このファイル自体を他の参加者に送って、それぞれの端末で開いてもらってください。※共有データは作成から24時間で自動的に消えます（対局当日限りの利用を想定）。</div>
+      </div>
+      <table id="scoreTable">
+        <thead>
+          <tr id="headerRow"></tr>
+        </thead>
+        <tbody id="bodyRows"></tbody>
+        <tfoot>
+          <tr class="total-row" id="totalRow"></tr>
+          <tr class="rank-row" id="rankRow"></tr>
+          <tr class="settlement-row" id="settlementTotalRow" style="display:none;"></tr>
+          <tr class="settlement-row" id="settlementFeeRow" style="display:none;"></tr>
+          <tr class="settlement-row settlement-final-row" id="settlementFinalRow" style="display:none;"></tr>
+        </tfoot>
+      </table>
+      <div class="balance-note" id="balanceNote"></div>
+      <div class="settlement-formula" id="settlementFormula" style="display:none;">総合トータル = 持ち点合計 ÷ 2 × 100円 ／ 場代 = −（1位の回数 × 200円）−（2位以下の回数 × 100円）／ 最終結果 = 総合トータル ＋ 場代</div>
+    </div>
+    <footer class="hint">入力内容はこのブラウザに自動保存されます。プレイヤー名・半荘は自由に追加/削除できます。</footer>
+  </div>
+
+<script>
+(function () {
+  const STORAGE_KEY = "mahjong-scoreboard-data-v1";
+  const ROOM_STORAGE_KEY = "mahjong-scoreboard-room-v1";
+  const JSONBLOB_BASE = "https://jsonblob.com/api/jsonBlob";
+  const SYNC_INTERVAL_MS = 3000;
+
+  let state = loadState();
+  let roomId = localStorage.getItem(ROOM_STORAGE_KEY) || null;
+  let lastSyncedAt = 0;
+  let pushDebounceTimer = null;
+  let pollIntervalId = null;
+
+  function defaultState() {
+    return {
+      players: [
+        { id: uid(), name: "プレイヤー1" },
+        { id: uid(), name: "プレイヤー2" },
+        { id: uid(), name: "プレイヤー3" },
+        { id: uid(), name: "プレイヤー4" }
+      ],
+      rounds: [
+        { id: uid(), scores: {} }
+      ]
+    };
+  }
+
+  function uid() {
+    return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      const parsed = JSON.parse(raw);
+      if (!parsed.players || !parsed.rounds) return defaultState();
+      return parsed;
+    } catch (e) {
+      return defaultState();
+    }
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  // 共有ルームへの反映(入力の度に呼ぶが、実際の通信は少し待って1回にまとめる)
+  function schedulePush() {
+    saveState();
+    if (!roomId) return;
+    clearTimeout(pushDebounceTimer);
+    pushDebounceTimer = setTimeout(pushState, 500);
+  }
+
+  function pushState() {
+    if (!roomId) return;
+    const updatedAt = Date.now();
+    const payload = JSON.stringify({ players: state.players, rounds: state.rounds, updatedAt });
+    lastSyncedAt = updatedAt;
+    fetch(JSONBLOB_BASE + "/" + roomId, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: payload
+    }).catch(() => {});
+  }
+
+  function pollRemote() {
+    if (!roomId) return;
+    fetch(JSONBLOB_BASE + "/" + roomId)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!data || !data.updatedAt || data.updatedAt <= lastSyncedAt) return;
+        lastSyncedAt = data.updatedAt;
+        state.players = data.players || state.players;
+        state.rounds = data.rounds || state.rounds;
+        saveState();
+        render();
+      })
+      .catch(() => {});
+  }
+
+  function startSync() {
+    stopSync();
+    pollRemote();
+    pollIntervalId = setInterval(pollRemote, SYNC_INTERVAL_MS);
+  }
+
+  function stopSync() {
+    if (pollIntervalId) clearInterval(pollIntervalId);
+    pollIntervalId = null;
+  }
+
+  function createRoom() {
+    const btn = document.getElementById("createRoomBtn");
+    btn.disabled = true;
+    btn.textContent = "作成中...";
+    const updatedAt = Date.now();
+    fetch(JSONBLOB_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ players: state.players, rounds: state.rounds, updatedAt })
+    })
+      .then(res => {
+        const id = res.headers.get("X-jsonblob-id") || (res.headers.get("Location") || "").split("/").pop();
+        if (!id) throw new Error("no id");
+        return id;
+      })
+      .then(id => {
+        roomId = id;
+        localStorage.setItem(ROOM_STORAGE_KEY, roomId);
+        lastSyncedAt = updatedAt;
+        startSync();
+        renderShareStatus();
+      })
+      .catch(() => {
+        alert("共有ルームの作成に失敗しました。通信状況を確認してもう一度お試しください。");
+      })
+      .finally(() => {
+        btn.disabled = false;
+        btn.textContent = "新しい共有を開始";
+      });
+  }
+
+  function joinRoom(id) {
+    id = (id || "").trim();
+    if (!id) return;
+    if (!confirm("ルームに参加すると、この端末のデータは共有ルームのデータに置き換わります。よろしいですか？")) return;
+    fetch(JSONBLOB_BASE + "/" + id)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!data) {
+          alert("ルームが見つかりませんでした。ルームIDを確認してください。");
+          return;
+        }
+        roomId = id;
+        localStorage.setItem(ROOM_STORAGE_KEY, roomId);
+        state.players = data.players || state.players;
+        state.rounds = data.rounds || state.rounds;
+        lastSyncedAt = data.updatedAt || Date.now();
+        saveState();
+        render();
+        startSync();
+        renderShareStatus();
+      })
+      .catch(() => {
+        alert("ルームへの接続に失敗しました。ルームIDと通信状況を確認してください。");
+      });
+  }
+
+  function leaveRoom() {
+    stopSync();
+    roomId = null;
+    localStorage.removeItem(ROOM_STORAGE_KEY);
+    renderShareStatus();
+  }
+
+  function renderShareStatus() {
+    const statusEl = document.getElementById("shareStatus");
+    const joinActions = document.getElementById("shareActionsJoin");
+    const leaveActions = document.getElementById("shareActionsLeave");
+    if (roomId) {
+      statusEl.innerHTML = "";
+      statusEl.appendChild(document.createTextNode("共有中 ルームID: "));
+      const strong = document.createElement("strong");
+      strong.textContent = roomId;
+      statusEl.appendChild(strong);
+      joinActions.style.display = "none";
+      leaveActions.style.display = "";
+    } else {
+      statusEl.textContent = "共有していません（このブラウザだけのデータです）";
+      joinActions.style.display = "";
+      leaveActions.style.display = "none";
+    }
+  }
+
+  function addPlayer() {
+    const n = state.players.length + 1;
+    state.players.push({ id: uid(), name: "プレイヤー" + n });
+    schedulePush();
+    render();
+  }
+
+  function removePlayer(playerId) {
+    if (state.players.length <= 1) {
+      alert("プレイヤーは最低1人必要です。");
+      return;
+    }
+    if (!confirm("このプレイヤーを削除しますか？入力済みのスコアも削除されます。")) return;
+    state.players = state.players.filter(p => p.id !== playerId);
+    state.rounds.forEach(r => { delete r.scores[playerId]; });
+    schedulePush();
+    render();
+  }
+
+  function renamePlayer(playerId, name) {
+    const p = state.players.find(p => p.id === playerId);
+    if (p) {
+      p.name = name;
+      schedulePush();
+      renderTotalsOnly();
+    }
+  }
+
+  function addRound() {
+    state.rounds.push({ id: uid(), scores: {} });
+    schedulePush();
+    render();
+  }
+
+  function removeRound(roundId) {
+    if (state.rounds.length <= 1) {
+      alert("半荘は最低1行必要です。");
+      return;
+    }
+    state.rounds = state.rounds.filter(r => r.id !== roundId);
+    schedulePush();
+    render();
+  }
+
+  function setScore(roundId, playerId, value) {
+    const round = state.rounds.find(r => r.id === roundId);
+    if (!round) return;
+    if (value === "" || value === "-") {
+      delete round.scores[playerId];
+    } else {
+      const num = Number(value);
+      if (!Number.isNaN(num)) {
+        round.scores[playerId] = num;
+      }
+    }
+    schedulePush();
+    renderTotalsOnly();
+  }
+
+  function getTotals() {
+    const totals = {};
+    state.players.forEach(p => { totals[p.id] = 0; });
+    state.rounds.forEach(r => {
+      state.players.forEach(p => {
+        totals[p.id] += (r.scores[p.id] || 0);
+      });
+    });
+    return totals;
+  }
+
+  function getRanks(totals) {
+    const sorted = [...state.players].sort((a, b) => totals[b.id] - totals[a.id]);
+    const ranks = {};
+    sorted.forEach((p, idx) => { ranks[p.id] = idx + 1; });
+    return ranks;
+  }
+
+  let settlementVisible = false;
+  let settlementMode = "ten5"; // "ten5" or "tenpin"
+
+  function getRoundRankCounts() {
+    const firstCount = {};
+    const restCount = {};
+    state.players.forEach(p => { firstCount[p.id] = 0; restCount[p.id] = 0; });
+    state.rounds.forEach(round => {
+      // その半荘でスコアが入力されている(=参加している)プレイヤーだけを対象にする
+      const entries = state.players
+        .filter(p => round.scores[p.id] !== undefined)
+        .map(p => ({ id: p.id, score: round.scores[p.id] }));
+      if (entries.length < 2) return;
+      const sorted = [...entries].sort((a, b) => b.score - a.score);
+      let rank = 1;
+      sorted.forEach((entry, idx) => {
+        if (idx > 0 && entry.score !== sorted[idx - 1].score) {
+          rank = idx + 1;
+        }
+        if (rank === 1) firstCount[entry.id]++;
+        else restCount[entry.id]++;
+      });
+    });
+    return { firstCount, restCount };
+  }
+
+  function calcSettlement(totals) {
+    const { firstCount, restCount } = getRoundRankCounts();
+    const settlement = {};
+    state.players.forEach(p => {
+      const pointsTotal = settlementMode === "tenpin"
+        ? totals[p.id] * 100
+        : (totals[p.id] / 2) * 100;
+      const fee = -(firstCount[p.id] * 200 + restCount[p.id] * 100);
+      settlement[p.id] = { pointsTotal, fee, final: pointsTotal + fee };
+    });
+    return { settlement, firstCount, restCount };
+  }
+
+  function formatYen(n) {
+    return Math.round(n).toLocaleString() + "円";
+  }
+
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    if (attrs) {
+      Object.entries(attrs).forEach(([k, v]) => {
+        if (k === "class") node.className = v;
+        else if (k === "text") node.textContent = v;
+        else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
+        else node.setAttribute(k, v);
+      });
+    }
+    (children || []).forEach(c => node.appendChild(c));
+    return node;
+  }
+
+  function render() {
+    renderHeader();
+    renderBody();
+    renderTotalsOnly();
+  }
+
+  function renderHeader() {
+    const headerRow = document.getElementById("headerRow");
+    headerRow.innerHTML = "";
+    headerRow.appendChild(el("th", { text: "半荘" }));
+    state.players.forEach(p => {
+      const th = el("th", { class: "name-cell" });
+      const input = el("input", {
+        class: "player-name-input",
+        value: p.name,
+        oninput: (e) => renamePlayer(p.id, e.target.value)
+      });
+      input.value = p.name;
+      const delBtn = el("button", {
+        class: "remove-player-btn",
+        text: "✕ 削除",
+        onclick: () => removePlayer(p.id)
+      });
+      th.appendChild(input);
+      th.appendChild(delBtn);
+      headerRow.appendChild(th);
+    });
+  }
+
+  function renderBody() {
+    const body = document.getElementById("bodyRows");
+    body.innerHTML = "";
+    state.rounds.forEach((round, idx) => {
+      const tr = el("tr");
+      const roundTd = el("td", { class: "round-cell" });
+      const inner = el("div", { class: "round-cell-inner" });
+      inner.appendChild(document.createTextNode((idx + 1) + "回戦"));
+      const delBtn = el("button", {
+        class: "btn-danger",
+        text: "✕",
+        onclick: () => removeRound(round.id)
+      });
+      inner.appendChild(delBtn);
+      roundTd.appendChild(inner);
+      tr.appendChild(roundTd);
+
+      state.players.forEach(p => {
+        const td = el("td");
+        const input = el("input", {
+          type: "number",
+          class: "score-input",
+          placeholder: "0",
+          oninput: (e) => {
+            setScore(round.id, p.id, e.target.value);
+            applyScoreColor(input);
+          }
+        });
+        if (round.scores[p.id] !== undefined) input.value = round.scores[p.id];
+        applyScoreColor(input);
+        td.appendChild(input);
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  function applyScoreColor(input) {
+    input.classList.remove("score-plus", "score-minus");
+    const v = Number(input.value);
+    if (input.value !== "" && !Number.isNaN(v)) {
+      if (v > 0) input.classList.add("score-plus");
+      else if (v < 0) input.classList.add("score-minus");
+    }
+  }
+
+  function renderTotalsOnly() {
+    const totals = getTotals();
+    const ranks = getRanks(totals);
+
+    const totalRow = document.getElementById("totalRow");
+    totalRow.innerHTML = "";
+    totalRow.appendChild(el("td", { text: "合計" }));
+    state.players.forEach(p => {
+      const t = totals[p.id];
+      const td = el("td", { text: (t > 0 ? "+" : "") + t.toLocaleString() });
+      if (t > 0) td.classList.add("score-plus");
+      else if (t < 0) td.classList.add("score-minus");
+      totalRow.appendChild(td);
+    });
+
+    const rankRow = document.getElementById("rankRow");
+    rankRow.innerHTML = "";
+    rankRow.appendChild(el("td", { text: "順位" }));
+    state.players.forEach(p => {
+      const rank = ranks[p.id];
+      const td = el("td");
+      const badge = el("span", {
+        class: "rank-badge " + (rank === 1 ? "rank-1" : rank === 2 ? "rank-2" : rank === 3 ? "rank-3" : "rank-other"),
+        text: rank + "位"
+      });
+      td.appendChild(badge);
+      rankRow.appendChild(td);
+    });
+
+    const settlementTotalRow = document.getElementById("settlementTotalRow");
+    const settlementFeeRow = document.getElementById("settlementFeeRow");
+    const settlementFinalRow = document.getElementById("settlementFinalRow");
+    const settlementFormula = document.getElementById("settlementFormula");
+    settlementTotalRow.innerHTML = "";
+    settlementFeeRow.innerHTML = "";
+    settlementFinalRow.innerHTML = "";
+    if (settlementVisible) {
+      const { settlement, firstCount, restCount } = calcSettlement(totals);
+
+      settlementTotalRow.appendChild(el("td", { text: "総合トータル" }));
+      state.players.forEach(p => {
+        const v = settlement[p.id].pointsTotal;
+        const td = el("td", { text: (v > 0 ? "+" : "") + formatYen(v) });
+        if (v > 0) td.classList.add("score-plus");
+        else if (v < 0) td.classList.add("score-minus");
+        settlementTotalRow.appendChild(td);
+      });
+
+      settlementFeeRow.appendChild(el("td", { text: "場代" }));
+      state.players.forEach(p => {
+        const v = settlement[p.id].fee;
+        const td = el("td");
+        const main = el("div", { text: (v > 0 ? "+" : "") + formatYen(v), class: "score-fee" });
+        const sub = el("div", {
+          class: "settlement-sub",
+          text: "1位" + firstCount[p.id] + "回 / 2位以下" + restCount[p.id] + "回"
+        });
+        td.appendChild(main);
+        td.appendChild(sub);
+        settlementFeeRow.appendChild(td);
+      });
+
+      settlementFinalRow.appendChild(el("td", { text: "最終結果" }));
+      state.players.forEach(p => {
+        const v = settlement[p.id].final;
+        const td = el("td", { text: (v > 0 ? "+" : "") + formatYen(v) });
+        if (v > 0) td.classList.add("score-plus");
+        else if (v < 0) td.classList.add("score-minus");
+        settlementFinalRow.appendChild(td);
+      });
+
+      const totalFormulaText = settlementMode === "tenpin"
+        ? "総合トータル = 持ち点合計 × 100円"
+        : "総合トータル = 持ち点合計 ÷ 2 × 100円";
+      settlementFormula.textContent = totalFormulaText + " ／ 場代 = −（1位の回数 × 200円）−（2位以下の回数 × 100円）／ 最終結果 = 総合トータル ＋ 場代";
+
+      settlementTotalRow.style.display = "";
+      settlementFeeRow.style.display = "";
+      settlementFinalRow.style.display = "";
+      settlementFormula.style.display = "";
+    } else {
+      settlementTotalRow.style.display = "none";
+      settlementFeeRow.style.display = "none";
+      settlementFinalRow.style.display = "none";
+      settlementFormula.style.display = "none";
+    }
+
+    const sum = Object.values(totals).reduce((a, b) => a + b, 0);
+    const note = document.getElementById("balanceNote");
+    if (sum === 0) {
+      note.textContent = "合計収支: 0（バランス OK）";
+      note.classList.remove("warn");
+    } else {
+      note.textContent = "合計収支: " + (sum > 0 ? "+" : "") + sum.toLocaleString() + "（通常は 0 になります。入力を確認してください）";
+      note.classList.add("warn");
+    }
+  }
+
+  document.getElementById("addPlayerBtn").addEventListener("click", addPlayer);
+  document.getElementById("addRoundBtn").addEventListener("click", addRound);
+  document.getElementById("settlementBtn").addEventListener("click", (e) => {
+    settlementVisible = !settlementVisible;
+    e.target.textContent = settlementVisible ? "精算を隠す" : "精算";
+    renderTotalsOnly();
+  });
+  document.getElementById("rateModeBtn").addEventListener("click", (e) => {
+    settlementMode = settlementMode === "ten5" ? "tenpin" : "ten5";
+    e.target.textContent = "料率: " + (settlementMode === "ten5" ? "テン5" : "テンピン");
+    renderTotalsOnly();
+  });
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    if (confirm("すべてのプレイヤーとスコアを削除して初期状態に戻します。よろしいですか？")) {
+      state = defaultState();
+      schedulePush();
+      render();
+    }
+  });
+
+  document.getElementById("shareToggleBtn").addEventListener("click", () => {
+    const panel = document.getElementById("sharePanel");
+    panel.style.display = panel.style.display === "none" ? "" : "none";
+  });
+  document.getElementById("createRoomBtn").addEventListener("click", createRoom);
+  document.getElementById("joinRoomBtn").addEventListener("click", () => {
+    joinRoom(document.getElementById("joinRoomInput").value);
+  });
+  document.getElementById("leaveRoomBtn").addEventListener("click", () => {
+    if (confirm("共有を解除しますか？以降はこの端末だけのデータになります。")) leaveRoom();
+  });
+  document.getElementById("copyRoomBtn").addEventListener("click", (e) => {
+    if (!roomId) return;
+    const finish = (ok) => {
+      const original = "ルームIDをコピー";
+      e.target.textContent = ok ? "コピーしました！" : "コピーに失敗しました";
+      setTimeout(() => { e.target.textContent = original; }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(roomId).then(() => finish(true)).catch(() => finish(false));
+    } else {
+      finish(false);
+    }
+  });
+
+  renderShareStatus();
+  if (roomId) startSync();
+  render();
+})();
+</script>
+</body>
+</html>
