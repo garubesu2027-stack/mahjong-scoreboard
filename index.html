@@ -230,6 +230,12 @@
     background: var(--total-bg);
     font-size: 1.05rem;
   }
+  tfoot tr.settlement-name-row td {
+    background: var(--header-bg);
+    color: var(--header-text);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
   .settlement-sub {
     font-size: 0.72rem;
     font-weight: 500;
@@ -418,6 +424,7 @@
           <tr class="settlement-row" data-role="settlementTotalRow" style="display:none;"></tr>
           <tr class="settlement-row" data-role="settlementFeeRow" style="display:none;"></tr>
           <tr class="settlement-row settlement-final-row" data-role="settlementFinalRow" style="display:none;"></tr>
+          <tr class="settlement-name-row" data-role="settlementNameRow" style="display:none;"></tr>
         </tfoot>
       </table>
       <div class="balance-note" data-role="balanceNote"></div>
@@ -908,10 +915,12 @@
       const settlementTotalRow = q("settlementTotalRow");
       const settlementFeeRow = q("settlementFeeRow");
       const settlementFinalRow = q("settlementFinalRow");
+      const settlementNameRow = q("settlementNameRow");
       const settlementFormula = q("settlementFormula");
       settlementTotalRow.innerHTML = "";
       settlementFeeRow.innerHTML = "";
       settlementFinalRow.innerHTML = "";
+      settlementNameRow.innerHTML = "";
       if (settlementVisible) {
         const { settlement, firstCount, restCount } = calcSettlement(totals);
 
@@ -947,6 +956,11 @@
           settlementFinalRow.appendChild(td);
         });
 
+        settlementNameRow.appendChild(el("td", { text: "名前" }));
+        state.players.forEach(p => {
+          settlementNameRow.appendChild(el("td", { text: p.name }));
+        });
+
         const totalFormulaText = settlementMode === "tenpin"
           ? "総合トータル = 持ち点合計 × 100円"
           : "総合トータル = 持ち点合計 ÷ 2 × 100円";
@@ -955,11 +969,13 @@
         settlementTotalRow.style.display = "";
         settlementFeeRow.style.display = "";
         settlementFinalRow.style.display = "";
+        settlementNameRow.style.display = "";
         settlementFormula.style.display = "";
       } else {
         settlementTotalRow.style.display = "none";
         settlementFeeRow.style.display = "none";
         settlementFinalRow.style.display = "none";
+        settlementNameRow.style.display = "none";
         settlementFormula.style.display = "none";
       }
 
