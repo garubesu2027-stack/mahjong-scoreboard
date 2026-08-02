@@ -100,6 +100,7 @@
   }
   button:hover { filter: brightness(1.08); }
   button:active { filter: brightness(0.95); }
+  button:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
   .btn-primary {
     background: var(--accent);
     color: #fff;
@@ -390,7 +391,8 @@
         <button class="btn-secondary" data-role="settlementBtn">精算</button>
         <button class="btn-secondary" data-role="rateModeBtn">料率: テン5</button>
         <button class="btn-secondary" data-role="shareToggleBtn">共有</button>
-        <button class="btn-danger" data-role="resetBtn" style="margin-left:auto;">全データをクリア</button>
+        <button class="btn-secondary" data-role="undoBtn" style="margin-left:auto;" disabled>↩ 元に戻す</button>
+        <button class="btn-danger" data-role="resetBtn">全データをクリア</button>
         <button class="btn-danger" data-role="deleteTableBtn">卓を削除</button>
       </div>
       <div class="share-panel" data-role="sharePanel" style="display:none;">
@@ -496,6 +498,22 @@
     let pollIntervalId = null;
     let settlementVisible = false;
     let settlementMode = "ten5"; // "ten5" or "tenpin"
+    let previousState = null;
+
+    function snapshotForUndo() {
+      previousState = JSON.parse(JSON.stringify(state));
+      const undoBtn = q("undoBtn");
+      if (undoBtn) undoBtn.disabled = false;
+    }
+
+    function undo() {
+      if (!previousState) return;
+      state = previousState;
+      previousState = null;
+      schedulePush();
+      render();
+      q("undoBtn").disabled = true;
+    }
 
     function defaultState() {
       return {
@@ -634,6 +652,7 @@
     }
 
     function addPlayer() {
+      snapshotForUndo();
       const n = state.players.length + 1;
       state.players.push({ id: uid(), name: "プレイヤー" + n });
       schedulePush();
@@ -645,6 +664,7 @@
         alert("プレイヤーは最低1人必要です。");
         return;
       }
+      snapshotForUndo();
       state.players = state.players.filter(p => p.id !== playerId);
       state.rounds.forEach(r => { delete r.scores[playerId]; });
       schedulePush();
@@ -670,6 +690,7 @@
     }
 
     function addRound() {
+      snapshotForUndo();
       state.rounds.push({ id: uid(), scores: {} });
       schedulePush();
       render();
@@ -680,6 +701,8 @@
         alert("半荘は最低1行必要です。");
         return;
       }
+      if (!confirm("この半荘を削除しますか？入力済みのスコアも削除されます。")) return;
+      snapshotForUndo();
       state.rounds = state.rounds.filter(r => r.id !== roundId);
       schedulePush();
       render();
@@ -774,7 +797,14 @@
         const input = el("input", {
           class: "player-name-input",
           value: p.name,
-          oninput: (e) => renamePlayer(p.id, e.target.value)
+          onfocus: () => snapshotForUndo(),
+          oninput: (e) => {
+            if (e.target.value.trim() === "") {
+              deletePlayerNow(p.id);
+              return;
+            }
+            renamePlayer(p.id, e.target.value);
+          }
         });
         input.value = p.name;
         const clearBtn = el("button", {
@@ -818,6 +848,7 @@
             type: "number",
             class: "score-input",
             placeholder: "0",
+            onfocus: () => snapshotForUndo(),
             oninput: (e) => {
               setScore(round.id, p.id, e.target.value);
               applyScoreColor(input);
@@ -953,11 +984,13 @@
     });
     q("resetBtn").addEventListener("click", () => {
       if (confirm("すべてのプレイヤーとスコアを削除して初期状態に戻します。よろしいですか？")) {
+        snapshotForUndo();
         state = defaultState();
         schedulePush();
         render();
       }
     });
+    q("undoBtn").addEventListener("click", undo);
     q("deleteTableBtn").addEventListener("click", () => {
       if (tableIds.length <= 1) {
         alert("卓は最低1つ必要です。");
