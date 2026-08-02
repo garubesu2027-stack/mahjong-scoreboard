@@ -285,9 +285,56 @@
     td.round-cell { font-size: 0.82rem; }
     .settlement-sub { font-size: 0.64rem; }
   }
+  .password-gate {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  .password-box {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 24px;
+    text-align: center;
+    max-width: 320px;
+    width: 100%;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .password-title { font-size: 1.3rem; margin-bottom: 8px; }
+  .password-desc { font-size: 0.85rem; color: var(--sub-text); margin-bottom: 16px; }
+  .password-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 1rem;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .password-input:focus { outline: none; border-color: var(--accent); }
+  .password-submit { width: 100%; padding: 10px; font-size: 0.95rem; }
+  .password-error { margin-top: 10px; font-size: 0.8rem; color: var(--plus-color); }
+  body:not(.authed) .wrap { display: none; }
+  body.authed .password-gate { display: none; }
 </style>
 </head>
 <body>
+  <div class="password-gate" id="passwordGate">
+    <div class="password-box">
+      <div class="password-title">🀄 麻雀成績表</div>
+      <div class="password-desc">合言葉を入力してください</div>
+      <input type="password" class="password-input" id="passwordInput" placeholder="合言葉" autocomplete="off">
+      <button class="btn-primary password-submit" id="passwordSubmitBtn">開く</button>
+      <div class="password-error" id="passwordError" style="display:none;">合言葉が違います</div>
+    </div>
+  </div>
   <div class="wrap">
     <h1>🀄 麻雀成績表</h1>
     <div class="card">
@@ -332,6 +379,34 @@
   </div>
 
 <script>
+(function () {
+  var PASSWORD = "入善";
+  var AUTH_KEY = "mahjong-scoreboard-authed-v1";
+
+  function tryUnlock() {
+    var input = document.getElementById("passwordInput");
+    var error = document.getElementById("passwordError");
+    if (input.value === PASSWORD) {
+      localStorage.setItem(AUTH_KEY, "1");
+      document.body.classList.add("authed");
+      error.style.display = "none";
+    } else {
+      error.style.display = "";
+      input.value = "";
+      input.focus();
+    }
+  }
+
+  if (localStorage.getItem(AUTH_KEY) === "1") {
+    document.body.classList.add("authed");
+  } else {
+    document.getElementById("passwordSubmitBtn").addEventListener("click", tryUnlock);
+    document.getElementById("passwordInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") tryUnlock();
+    });
+  }
+})();
+
 (function () {
   const STORAGE_KEY = "mahjong-scoreboard-data-v1";
   const ROOM_STORAGE_KEY = "mahjong-scoreboard-room-v1";
