@@ -619,7 +619,7 @@
       render();
     }
 
-    function removePlayer(playerId) {
+    function deletePlayerNow(playerId) {
       if (state.players.length <= 1) {
         alert("プレイヤーは最低1人必要です。");
         return;
@@ -628,6 +628,15 @@
       state.rounds.forEach(r => { delete r.scores[playerId]; });
       schedulePush();
       render();
+    }
+
+    function removePlayer(playerId) {
+      if (state.players.length <= 1) {
+        alert("プレイヤーは最低1人必要です。");
+        return;
+      }
+      if (!confirm("このプレイヤーを削除しますか？入力済みのスコアも削除されます。")) return;
+      deletePlayerNow(playerId);
     }
 
     function renamePlayer(playerId, name) {
@@ -740,18 +749,16 @@
       headerRow.appendChild(el("th", { text: "半荘" }));
       state.players.forEach(p => {
         const th = el("th", { class: "name-cell" });
-        let emptyDeleteTimer = null;
         const input = el("input", {
           class: "player-name-input",
           value: p.name,
           oninput: (e) => {
-            renamePlayer(p.id, e.target.value);
-            clearTimeout(emptyDeleteTimer);
-            // スマホの入力欄クリアボタンなどで名前が空になったら、少し待って自動的にプレイヤーを削除する
-            // (入力し直している途中で一瞬空になるケースを誤爆させないための猶予)
+            // スマホの入力欄クリアボタン(✕)で名前を空にしたら、確認なしで即座にプレイヤーを削除する
             if (e.target.value.trim() === "") {
-              emptyDeleteTimer = setTimeout(() => removePlayer(p.id), 500);
+              deletePlayerNow(p.id);
+              return;
             }
+            renamePlayer(p.id, e.target.value);
           }
         });
         input.value = p.name;
