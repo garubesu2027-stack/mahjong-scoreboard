@@ -798,19 +798,18 @@
           class: "player-name-input",
           value: p.name,
           onfocus: () => snapshotForUndo(),
-          oninput: (e) => {
-            if (e.target.value.trim() === "") {
-              deletePlayerNow(p.id);
-              return;
-            }
-            renamePlayer(p.id, e.target.value);
-          }
+          oninput: (e) => renamePlayer(p.id, e.target.value)
         });
         input.value = p.name;
         const clearBtn = el("button", {
           class: "name-clear-btn",
           text: "✕",
-          onclick: () => deletePlayerNow(p.id)
+          onclick: () => {
+            snapshotForUndo();
+            input.value = "";
+            renamePlayer(p.id, "");
+            input.focus();
+          }
         });
         wrap.appendChild(input);
         wrap.appendChild(clearBtn);
