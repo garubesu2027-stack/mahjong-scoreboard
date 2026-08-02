@@ -135,6 +135,9 @@
   thead th.name-cell {
     padding: 6px 8px;
   }
+  .name-field-wrap {
+    position: relative;
+  }
   .player-name-input {
     width: 100%;
     min-width: 70px;
@@ -145,12 +148,30 @@
     border-bottom: 1px dashed rgba(255,255,255,0.4);
     font-weight: 700;
     font-size: 0.95rem;
-    padding: 3px 2px;
+    padding: 3px 16px 3px 2px;
   }
   .player-name-input:focus {
     outline: none;
     border-bottom: 1px solid #fff;
   }
+  .name-clear-btn {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.85);
+    font-size: 0.62rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .name-clear-btn:hover { background: var(--plus-color); color: #fff; }
   .remove-player-btn {
     display: block;
     margin: 4px auto 0;
@@ -294,7 +315,8 @@
     .card { padding: 10px; }
     th, td { padding: 5px 3px; }
     .score-input { width: 54px; padding: 5px 2px; font-size: 0.85rem; }
-    .player-name-input { min-width: 48px; font-size: 0.82rem; }
+    .player-name-input { min-width: 48px; font-size: 0.82rem; padding-right: 14px; }
+    .name-clear-btn { width: 14px; height: 14px; font-size: 0.56rem; }
     .remove-player-btn { font-size: 0.68rem; }
     .round-cell-inner { gap: 3px; font-size: 0.82rem; }
     td.round-cell { font-size: 0.82rem; }
@@ -480,8 +502,7 @@
         players: [
           { id: uid(), name: "プレイヤー1" },
           { id: uid(), name: "プレイヤー2" },
-          { id: uid(), name: "プレイヤー3" },
-          { id: uid(), name: "プレイヤー4" }
+          { id: uid(), name: "プレイヤー3" }
         ],
         rounds: [
           { id: uid(), scores: {} }
@@ -749,25 +770,26 @@
       headerRow.appendChild(el("th", { text: "半荘" }));
       state.players.forEach(p => {
         const th = el("th", { class: "name-cell" });
+        const wrap = el("div", { class: "name-field-wrap" });
         const input = el("input", {
           class: "player-name-input",
           value: p.name,
-          oninput: (e) => {
-            // スマホの入力欄クリアボタン(✕)で名前を空にしたら、確認なしで即座にプレイヤーを削除する
-            if (e.target.value.trim() === "") {
-              deletePlayerNow(p.id);
-              return;
-            }
-            renamePlayer(p.id, e.target.value);
-          }
+          oninput: (e) => renamePlayer(p.id, e.target.value)
         });
         input.value = p.name;
+        const clearBtn = el("button", {
+          class: "name-clear-btn",
+          text: "✕",
+          onclick: () => deletePlayerNow(p.id)
+        });
+        wrap.appendChild(input);
+        wrap.appendChild(clearBtn);
         const delBtn = el("button", {
           class: "remove-player-btn",
           text: "✕ 削除",
           onclick: () => removePlayer(p.id)
         });
-        th.appendChild(input);
+        th.appendChild(wrap);
         th.appendChild(delBtn);
         headerRow.appendChild(th);
       });
