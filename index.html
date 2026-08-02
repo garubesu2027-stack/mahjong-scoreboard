@@ -369,6 +369,7 @@
         <button class="btn-secondary" data-role="rateModeBtn">料率: テン5</button>
         <button class="btn-secondary" data-role="shareToggleBtn">共有</button>
         <button class="btn-danger" data-role="resetBtn" style="margin-left:auto;">全データをクリア</button>
+        <button class="btn-danger" data-role="deleteTableBtn">卓を削除</button>
       </div>
       <div class="share-panel" data-role="sharePanel" style="display:none;">
         <div class="share-status" data-role="shareStatus">共有していません（このブラウザだけのデータです）</div>
@@ -739,10 +740,19 @@
       headerRow.appendChild(el("th", { text: "半荘" }));
       state.players.forEach(p => {
         const th = el("th", { class: "name-cell" });
+        let emptyDeleteTimer = null;
         const input = el("input", {
           class: "player-name-input",
           value: p.name,
-          oninput: (e) => renamePlayer(p.id, e.target.value)
+          oninput: (e) => {
+            renamePlayer(p.id, e.target.value);
+            clearTimeout(emptyDeleteTimer);
+            // スマホの入力欄クリアボタンなどで名前が空になったら、少し待って自動的にプレイヤーを削除する
+            // (入力し直している途中で一瞬空になるケースを誤爆させないための猶予)
+            if (e.target.value.trim() === "") {
+              emptyDeleteTimer = setTimeout(() => removePlayer(p.id), 500);
+            }
+          }
         });
         input.value = p.name;
         const delBtn = el("button", {
@@ -919,6 +929,21 @@
         render();
       }
     });
+    q("deleteTableBtn").addEventListener("click", () => {
+      if (tableIds.length <= 1) {
+        alert("卓は最低1つ必要です。");
+        return;
+      }
+      if (!confirm("この卓を削除しますか？この卓のデータは完全に削除されます。")) return;
+      stopSync();
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(ROOM_STORAGE_KEY);
+      const idx = tableIds.indexOf(tableId);
+      if (idx !== -1) tableIds.splice(idx, 1);
+      saveTableIds(tableIds);
+      root.remove();
+      relabelTables();
+    });
 
     q("shareToggleBtn").addEventListener("click", () => {
       const panel = q("sharePanel");
@@ -963,6 +988,14 @@
 
   function saveTableIds(ids) {
     localStorage.setItem(TABLES_KEY, JSON.stringify(ids));
+  }
+
+  function relabelTables() {
+    const tablesRoot = document.getElementById("tablesRoot");
+    Array.from(tablesRoot.children).forEach((child, idx) => {
+      const labelEl = child.querySelector(".table-label");
+      if (labelEl) labelEl.textContent = "卓 " + (idx + 1);
+    });
   }
 
   const tableIds = loadTableIds();
