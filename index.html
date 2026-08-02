@@ -391,7 +391,7 @@
         <button class="btn-secondary" data-role="settlementBtn">精算</button>
         <button class="btn-secondary" data-role="rateModeBtn">料率: テン5</button>
         <button class="btn-secondary" data-role="shareToggleBtn">共有</button>
-        <button class="btn-secondary" data-role="undoBtn" style="margin-left:auto;" disabled>↩ 元に戻す</button>
+        <button class="btn-secondary" data-role="undoBtn" style="margin-left:auto;" disabled>↩ 1個前に戻す</button>
         <button class="btn-danger" data-role="resetBtn">全データをクリア</button>
         <button class="btn-danger" data-role="deleteTableBtn">卓を削除</button>
       </div>
@@ -498,21 +498,26 @@
     let pollIntervalId = null;
     let settlementVisible = false;
     let settlementMode = "ten5"; // "ten5" or "tenpin"
-    let previousState = null;
+    const UNDO_MAX = 5;
+    let undoStack = [];
 
     function snapshotForUndo() {
-      previousState = JSON.parse(JSON.stringify(state));
+      undoStack.push(JSON.parse(JSON.stringify(state)));
+      if (undoStack.length > UNDO_MAX) undoStack.shift();
+      updateUndoButton();
+    }
+
+    function updateUndoButton() {
       const undoBtn = q("undoBtn");
-      if (undoBtn) undoBtn.disabled = false;
+      if (undoBtn) undoBtn.disabled = undoStack.length === 0;
     }
 
     function undo() {
-      if (!previousState) return;
-      state = previousState;
-      previousState = null;
+      if (undoStack.length === 0) return;
+      state = undoStack.pop();
       schedulePush();
       render();
-      q("undoBtn").disabled = true;
+      updateUndoButton();
     }
 
     function defaultState() {
